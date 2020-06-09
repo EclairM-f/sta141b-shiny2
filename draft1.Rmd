@@ -1,0 +1,186 @@
+```{r}
+library(tidyverse)
+library(jsonlite)
+library(lubridate)
+library(httr)
+```
+
+
+```{r}
+endpoint="https://calendarific.com/api/v2/holidays"
+r <- GET(endpoint,query=list(api_key="0da63e827fe1ca08ed95f28d98396bc99cce4fe8",
+                             country="us",
+                             year=2019,
+                             month=2))
+json <- content(r, as = "text",encoding = "UTF-8")
+table_US_2019 <- fromJSON(json)
+table_US_2019
+```
+
+```{r}
+table_US_2019$response$holidays
+table_US_2019$response$holidays$date
+table_US_2019$response$holidays$type
+table_US_2019$response$holidays$date$datetime
+```
+```{r}
+#key: 0da63e827fe1ca08ed95f28d98396bc99cce4fe8
+
+
+```
+
+```{r}
+#国家名字转化
+iso.expand(a, regex=TRUE)#输入代号，输出全名
+sov.expand(sov, regex=TRUE)#输入全名，输出代号
+```
+```{r}
+html <- read_html("https://calendarific.com/supported-countries")
+html %>% html_nodes("td") %>% html_node("a")%>% html_text %>% na.omit
+```
+
+
+```{r}
+#测试中国、2019无问题
+r <- GET(endpoint,query=list(api_key="0da63e827fe1ca08ed95f28d98396bc99cce4fe8",
+                                     country=name_to_abb("China"),
+                                     year=2019,
+                                     month=2))
+        json <- content(r, as = "text",encoding = "UTF-8")
+        table <- fromJSON(json)$response$holidays
+        table
+table %>% mutate(country=table$country$name,date=table$date$iso,type=as.vector(unlist(table$type)))
+
+```
+```{r}
+#测试阿富汗 
+r <- GET(endpoint,query=list(api_key="0da63e827fe1ca08ed95f28d98396bc99cce4fe8",
+                                     country=name_to_abb("Afghanistan"),
+                                     year=1999))
+        json <- content(r, as = "text",encoding = "UTF-8")
+        table <- fromJSON(json)$response$holidays
+        table <- table %>% mutate(country=table$country$name,date=table$date$iso,type=as.vector(unlist(table$type)))
+        
+        table
+```
+```{r}
+r <- GET(endpoint,query=list(api_key="0da63e827fe1ca08ed95f28d98396bc99cce4fe8",
+                                     country=name_to_abb("Afghanistan"),
+                                     year=2020))
+        json <- content(r, as = "text",encoding = "UTF-8")
+        table <- fromJSON(json)$response$holidays
+        table <- table %>% mutate(country=table$country$name,date=table$date$iso,type=as.vector(unlist(table$type)))
+        table %>% mutate(MONTH=table$date$datetime$month,DAY=table$date$datetime$day,country=NULL,description=NULL,date=NULL,type=NULL,locations=NULL,states=NULL)
+        
+        #####hist
+        ggplot(table,aes(x=table$date,y=table$date,group=1))+geom_line()
+```
+```{r}
+list1  <- function(x){table$type[[x]][1]}
+#difftime(begin,end,units="days")  
+r <- GET(endpoint,query=list(api_key="0da63e827fe1ca08ed95f28d98396bc99cce4fe8",
+                                     country="us",
+                                     year=2020
+                                     ))
+
+        json <- content(r, as = "text",encoding = "UTF-8")
+        table <- fromJSON(json)$response$holidays
+        if (length(table)==0){print("NOOOO")}else{
+        
+        
+        table <- table %>% mutate(country=table$country$name,date=as.character(as.Date(table$date$iso)),type=sapply(1:length(table$type),list1),states=NULL)
+       
+        table <-  table%>% mutate(diff_time=difftime("2020-07-09",table$date,units="days"))
+       table <- table %>% arrange(desc(table$diff_time))
+       table[which(table$diff_time<0)[1],]}
+       
+```
+
+```{r}
+get_table <- function(r){
+  json <- content(r, as = "text",encoding = "UTF-8")
+  table <- fromJSON(json)$response$holidays
+if (length(table)==0){print("NOOOO")}else{
+table <- table %>% mutate(country=table$country$name,date=as.character(as.Date(table$date$iso)),type=sapply(1:length(table$type),list1),states=NULL)
+return(table)}}
+
+table <- get_table(r)
+table <-  table%>% mutate(diff_time=difftime(x,table$date,units="days"))
+table <- table %>% arrange(desc(table$diff_time))
+table[which(table$diff_time<0)[1],]
+```
+
+
+```{r}
+r <- GET(endpoint,query=list(api_key="0da63e827fe1ca08ed95f28d98396bc99cce4fe8", country="us", year=2020, month=11))
+    
+        table=get_table(r)
+        table
+```
+```{r}
+r <- GET(endpoint,query=list(api_key="0da63e827fe1ca08ed95f28d98396bc99cce4fe8", country="us", year=2020))
+
+      json <- content(r, as = "text",encoding = "UTF-8")
+      table <- fromJSON(json)$response$holidays
+      table <- table %>% mutate(MONTH=table$date$datetime$month,DAY=NULL,country=NULL,description=NULL,date=NULL,type=NULL,locations=NULL)
+      
+      states_dict <- list('Alabama'=c(), 'Alaska'=c(), 'Arizona'=c(), 'Arkansas'=c(), 'California'=c(), 'Colorado'=c(), 'Connecticut'=c(), 'Delaware'=c(), 'District of Columbia'=c(), 'Florida'=c(), 'Georgia'=c(), 'Hawaii'=c(), 'Idaho'=c(), 'Illinois'=c(), 'Indiana'=c(), 'Iowa'=c(), 'Kansas'=c(), 'Kentucky'=c(), 'Louisiana'=c(), 'Maine'=c(), 'Maryland'=c(), 'Massachusetts'=c(), 'Michigan'=c(), 'Minnesota'=c(), 'Mississippi'=c(), 'Missouri'=c(), 'Montana'=c(), 'Nebraska'=c(), 'Nevada'=c(), 'New Hampshire'=c(), 'New Jersey'=c(), 'New Mexico'=c(), 'New York'=c(), 'North Carolina'=c(), 'North Dakota'=c(), 'Ohio'=c(), 'Oklahoma'=c(), 'Oregon'=c(), 'Pennsylvania'=c(), 'Rhode Island'=c(), 'South Carolina'=c(), 'South Dakota'=c(), 'Tennessee'=c(), 'Texas'=c(), 'Utah'=c(), 'Vermont'=c(), 'Virginia'=c(), 'Washington'=c(), 'West Virginia'=c(), 'Wisconsin'=c(), 'Wyoming'=c())
+      
+      states_list <- c('Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming')
+      name_list=c()
+      for (i in c(1:2)){
+        if (table[i,]$states=="All"){
+          for (state1 in states_list){
+          states_dict$state1 <- c(states_dict$state1,table[i,]$MONTH)
+          }
+          }
+      }
+      
+      
+      table
+      #hist(1:12,xlim=c(0,12),breaks=c(0:12))
+      
+      
+      
+ r <- GET(endpoint,query=list(api_key="0da63e827fe1ca08ed95f28d98396bc99cce4fe8", country="us", year=2020,location="us-az"))
+      json <- content(r, as = "text",encoding = "UTF-8")
+      table <- fromJSON(json)$response$holidays
+      table <- table %>% mutate(MONTH=table$date$datetime$month,DAY=NULL,country=NULL,description=NULL,date=NULL,type=NULL,locations=NULL)
+      table
+      #需要操作table
+      
+      hist(table$MONTH,xlim=c(0,12),breaks=c(0:12))
+```
+```{r}
+
+#正确的get table函数
+ r <- GET(endpoint,query=list(api_key="0da63e827fe1ca08ed95f28d98396bc99cce4fe8", country="us", year=2020))
+get_table <- function(r){
+  json <- content(r, as = "text",encoding = "UTF-8")
+  table <- fromJSON(json)$response$holidays
+  if (length(table)==0){print("Oops! There seems no data in the database that you want. Please change year or month.")}else{
+    table <- table %>% mutate(country=table$country$name,date=as.character(as.Date(table$date$iso)),type=sapply(1:length(table$type),list1),states=NULL)
+    return(table)}}
+get_table(r)
+```
+
+```{r}
+state_to_abb <- function(state){
+  info <- cbind(state.name,state.abb) %>% as.data.frame %>% filter(state.name==state)
+  return(paste("us-",str_to_lower(info$state.abb),sep=""))
+  }
+
+r <- GET(endpoint,query=list(api_key="0da63e827fe1ca08ed95f28d98396bc99cce4fe8", country=name_to_abb("United States"), year=2020,location=state_to_abb("California")))
+      json <- content(r, as = "text",encoding = "UTF-8")
+      table <- fromJSON(json)$response$holidays
+      table <- table %>% mutate(MONTH=table$date$datetime$month,DAY=NULL,country=NULL,description=NULL,date=NULL,locations=NULL,states=NULL)
+      table$type %>% unlist 
+```
+```{r}
+df <- table$type %>% unlist %>% as.data.frame
+colnames(df) <- c("TYPE")
+df %>% group_by(TYPE) %>% count()
+
+
+```
+
